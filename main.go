@@ -166,7 +166,7 @@ func initializeDB(client *mongo.Client, ctx context.Context) *mongo.Collection {
 }
 
 func metadataHandler(w http.ResponseWriter, r *http.Request) {
-    if r.Method == "POST" {
+    if r.Method == "PATCH" {
         updateMetadata(w,r)
     } else if r.Method == "GET" {
         getMetadata(w,r)
@@ -174,6 +174,44 @@ func metadataHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func updateMetadata(w http.ResponseWriter, r *http.Request) {
+    var book Book
+     titlereq, ok := r.URL.Query()["title"]
+
+     if !ok || len(titlereq[0])< 1 {
+         log.Println("URL param 'title' is missing ")
+         return
+     }
+
+     log.Println("title query ",titlereq)
+     title := titlereq[0];
+     lastLocreq,ok := r.URL.Query()["last_loc"]
+
+     if !ok || len(lastLocreq[0])< 1 {
+         log.Println("URL param 'last loc' is missing ")
+         return
+     }
+
+     lastLoc := lastLocreq[0];
+
+     newLastLoc,_  := strconv.Atoi(lastLoc)
+
+
+    var filter = bson.D{{ "title", title}}
+    var set = bson.D{{"lastloc", newLastLoc}}
+    var update = bson.D{{"$set",set}}
+
+
+    err := coll.FindOneAndUpdate(context.TODO(), filter,update).Decode(&book)
+
+    if err != nil {
+        log.Println(err)
+    } else {
+        log.Println("lastLoc of ",book.Title," has been updated" )
+
+        w.Header().Set("Content-Type","application/json")
+        response,_ :=json.Marshal(book)
+        w.Write(response)
+    }
 
 }
 
