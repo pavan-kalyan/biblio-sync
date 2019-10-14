@@ -20,6 +20,7 @@ import (
 // global variables
 var libraryUrl string
 var libraryPort int
+var helpFlag bool
 var coll *mongo.Collection
 
 type Book struct {
@@ -250,9 +251,16 @@ func getMetadata(w http.ResponseWriter, r *http.Request) {
 
 
 func main() {
-	//fmt.Println("Starting program")
     flag.StringVar(&libraryUrl,"library-url","localhost","The URL of the Calibre Library server")
     flag.IntVar(&libraryPort,"library-port",8080,"The Port of the Calibre Library server")
+    flag.BoolVar(&helpFlag,"help",false,"help flag")
+    flag.Parse()
+    if(helpFlag) {
+        fmt.Println("-library-url  --- The URL of the Calibre Library server")
+        fmt.Println("-library-port  --- The Port of the Calibre Library server")
+        fmt.Println("-help --- display different flag options")
+        return;
+    }
 	clientOptions := options.Client().ApplyURI("mongodb://localhost:27017")
 
 	client, err := mongo.Connect(context.TODO(), clientOptions)
@@ -266,17 +274,6 @@ func main() {
 	ctx, _ := context.WithTimeout(context.Background(), 15*time.Second)
 	fmt.Println("Connected to Mongodb")
 	coll = initializeDB(client, ctx)
-/*
-	books := getListOfBooks("localhost", "Calibre_Library", 8080)
-	var book Book
-	var filter = bson.D{{"title", books.books[0].Title}}
-	err = coll.FindOne(context.TODO(), filter).Decode(&book)
-	if err != nil {
-		log.Fatal(err)
-	} else {
-		fmt.Println(book.Title)
-	}
-*/
 	http.HandleFunc("/mdata", metadataHandler)
 	err = http.ListenAndServe(":9090", nil)
 	if err != nil {
